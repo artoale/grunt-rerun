@@ -7,11 +7,19 @@
  */
 
 'use strict';
-
-module.exports = function(grunt) {
+var mountFolder = function (connect, dir) {
+  return connect.static(require('path').resolve(dir));
+};
+module.exports = function (grunt) {
 
   // Project configuration.
   grunt.initConfig({
+    watch: {
+      prova: {
+        files: ['tasks/*.js'],
+        tasks: ['clean','rerun:default_options:connect:go']
+      },
+    },
     jshint: {
       all: [
         'Gruntfile.js',
@@ -27,23 +35,27 @@ module.exports = function(grunt) {
     clean: {
       tests: ['tmp'],
     },
+    connect: {
+      pippo: {
+        options: {
+          port: 9000,
+          // Change this to '0.0.0.0' to access the server from outside.
+          hostname: 'localhost',
+          keepalive: true,
+          middleware: function (connect) {
+            return [
+            mountFolder(connect, 'test'), ];
+          }
+        }
+      }
 
+    },
     // Configuration to be run (and then tested).
     rerun: {
       default_options: {
         options: {
-        },
-        files: {
-          'tmp/default_options': ['test/fixtures/testing', 'test/fixtures/123'],
-        },
-      },
-      custom_options: {
-        options: {
-          separator: ': ',
-          punctuation: ' !!!',
-        },
-        files: {
-          'tmp/custom_options': ['test/fixtures/testing', 'test/fixtures/123'],
+          tasks: ['clean', 'connect'],
+          keepalive: false,
         },
       },
     },
@@ -60,13 +72,15 @@ module.exports = function(grunt) {
 
   // These plugins provide necessary tasks.
   grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-connect');
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-nodeunit');
+  grunt.loadNpmTasks('grunt-contrib-watch');
 
   // Whenever the "test" task is run, first clean the "tmp" dir, then run this
   // plugin's task(s), then test the result.
   grunt.registerTask('test', ['clean', 'rerun', 'nodeunit']);
-
+  grunt.registerTask('prova',['rerun','watch']);
   // By default, lint and run all tests.
   grunt.registerTask('default', ['jshint', 'test']);
 
