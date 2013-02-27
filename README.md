@@ -25,65 +25,79 @@ In your project's Gruntfile, add a section named `rerun` to the data object pass
 ```js
 grunt.initConfig({
   rerun: {
-    options: {
-      // Task-specific options go here.
+      yourtarget: {
+        options: {
+          tasks: ['express'],
+          keepalive: false,
+          port: 12456
+        },
+      },
     },
-    your_target: {
-      // Target-specific file lists and/or options go here.
-    },
-  },
 })
 ```
 
 ### Options
 
-#### options.separator
-Type: `String`
-Default value: `',  '`
+#### options.task
+Type: `Array`
+Default value: []
 
-A string value that is used to do something with whatever.
+An array of grunt task to be 're-run'. Those should be long-living grunt task (like testacular server, express with keepalive and so on)
 
-#### options.punctuation
-Type: `String`
-Default value: `'.'`
+#### options.keepalive
+Type: `Boolean`
+Default value: `false`
 
-A string value that is used to do something else with whatever else.
+Wheter or not the rerun task should block or not. The preferred way is to leave `keepalive` to false and to useit in conjunction
+with other long-living task like `watch`
 
+#### options.port
+Type: `Number`
+Default value: `1247`
+
+The default port used for internal communication. The `rerun:target` task will launch a server listening on this port, wich will 
+recive further comunication via the `rerun:target:task:go` task. 
 ### Usage Examples
 
-#### Default Options
-In this example, the default options are used to do something with whatever. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
+In this example, the default options are used to so keepalive will be `false` and the port used internally will be `1247`. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
 
 ```js
 grunt.initConfig({
-  rerun: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
+  watch: {
+      dev: {
+        files: ['server/*.js'],
+
+        //Note the :go flag used for sending the reload message to the rerun server
+        tasks: ['clean','rerun:dev:express:go']
+      },
     },
-  },
+    express: {
+        dev: {
+            options: {
+                port: 3000,
+                bases: [ path.resolve('<%= yeoman.app %>') , path.resolve('<%= yeoman.server %>/.public')],
+                keepalive: true,
+                supervisor: false,
+                debug: false,
+                server: path.resolve('./app/server')
+            }
+        }
+    },
+    // Configuration to be run (and then tested).
+    rerun: {
+      dev: {
+        options: {
+          tasks: ['express']
+        },
+      },
+    }
 })
 ```
 
-#### Custom Options
-In this example, custom options are used to do something else with whatever else. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result in this case would be `Testing: 1 2 3 !!!`
-
-```js
-grunt.initConfig({
-  rerun: {
-    options: {
-      separator: ': ',
-      punctuation: ' !!!',
-    },
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-})
-```
 
 ## Contributing
-In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
+The project is in very ealry stage, so any suggestion, pull request and issue are welcomed. 
+Please use github for any communication
 
 ## Release History
 _(Nothing yet)_
