@@ -75,11 +75,9 @@ grunt.initConfig({
         dev: {
             options: {
                 port: 3000,
-                bases: [ path.resolve('<%= yeoman.app %>') , path.resolve('<%= yeoman.server %>/.public')],
+                bases: ['/public'],
                 keepalive: true,
-                supervisor: false,
-                debug: false,
-                server: path.resolve('./app/server')
+                server: path.resolve('./server/app.js')
             }
         }
     },
