@@ -1,7 +1,7 @@
 {
   "name": "grunt-rerun",
   "description": "Launch, relaunch and stop grunt task.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/ArtoAle/grunt-rerun",
   "author": {
     "name": "Alessandro Artoni",
