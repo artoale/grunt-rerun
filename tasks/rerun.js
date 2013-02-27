@@ -15,7 +15,8 @@ module.exports = function (grunt) {
     grunt.registerMultiTask('rerun', 'Your task description goes here.', function () {
         // Merge task-specific and/or target-specific options with these defaults.
         var defaultsOptions = {
-            tasks: []
+            tasks: [],
+            port: 1247
         };
 
         var options = this.options(defaultsOptions);
@@ -25,13 +26,13 @@ module.exports = function (grunt) {
             grunt.log.error('Error in configuration: tasks option should be an array');
             return false;
         }
-        
+
         if (this.flags.go) {
             var done = this.async();
             var opt = {
 
                 hostname: '127.0.0.1',
-                port: 1337,
+                port: options.port,
                 path: '/' + this.args[0],
                 method: 'POST'
             };
@@ -45,8 +46,12 @@ module.exports = function (grunt) {
 
         }
         var taskman = taskManager(options.tasks);
-        taskman.startOne('connect');
-        server(taskman);
+        options.tasks.forEach(function (taskname) {
+            taskman.startOne(taskname);
+        });
+
+        // taskman.startOne('connect');
+        server(taskman,options);
         if (options.keepalive) {
             grunt.log.writeln('Rerun is running forever. Hit Crt-C to stop it');
             this.async();
@@ -132,8 +137,9 @@ module.exports = function (grunt) {
             stopOne: stopTask
         };
     };
+    
 
-    var server = function server(taskManager) {
+    var server = function server(taskManager, options) {
         var http = require('http');
         http.createServer(function (req, res) {
             var command = req.url.substr(1);
@@ -149,7 +155,7 @@ module.exports = function (grunt) {
             } else {
                 res.end('Error\n');
             }
-        }).listen(1337, "127.0.0.1");
+        }).listen(options.port, "127.0.0.1");
         console.log('Server running at http://127.0.0.1:1337/');
     };
 
