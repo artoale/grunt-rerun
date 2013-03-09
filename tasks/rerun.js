@@ -47,13 +47,14 @@ module.exports = function (grunt) {
             return;
 
         }
-        var taskman = taskManager(options.tasks);
+        var taskman = taskManager(options.tasks, grunt);
         options.tasks.forEach(function (taskname) {
             taskman.startOne(taskname);
         });
 
         // taskman.startOne('connect');
-        server(taskman,options);
+        
+        require('./lib/server.js')(taskman,options);
         if (options.keepalive) {
             grunt.log.writeln('Rerun is running forever. Hit Crt-C to stop it');
             this.async();
@@ -61,24 +62,6 @@ module.exports = function (grunt) {
     });
 
 
-    var server = function server(taskManager, options) {
-        var http = require('http');
-        http.createServer(function (req, res) {
-            var command = req.url.substr(1);
-            var commandlist = command.split(':');
-            var task = commandlist[0];
-            var status = taskManager.stopOne(task);
-            status = taskManager.startOne(task) && status;
-            res.writeHead(200, {
-                'Content-Type': 'text/plain'
-            });
-            if (status) {
-                res.end('Done.\n');
-            } else {
-                res.end('Error\n');
-            }
-        }).listen(options.port, "127.0.0.1");
-        console.log('Server running at http://127.0.0.1:' + options.port + '/');
-    };
+    
 
 };
