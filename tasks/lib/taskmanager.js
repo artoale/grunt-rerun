@@ -35,6 +35,7 @@ module.exports = function taskManager(taskList, grunt) {
         cmd = 'grunt ' + task;
         grunt.log.writeln('Running task: ' + task.cyan);
         tasks[task].status = 'RUNNING';
+
         tasks[task].child = require('child_process').exec(cmd);
 
         tasks[task].child.on('exit', function (code, signal) {
@@ -45,8 +46,14 @@ module.exports = function taskManager(taskList, grunt) {
             delete tasks[task].child;
         });
         tasks[task].child.stdout.on('data', function (data) {
+            // console.log('data recived');
             grunt.log.write(data);
         });
+
+        tasks[task].child.stderr.on('data', function (data) {
+            grunt.log.write(data);
+        });
+
         return true;
     }
 
