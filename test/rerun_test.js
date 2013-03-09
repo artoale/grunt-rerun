@@ -23,26 +23,38 @@ var grunt = require('grunt');
 */
 
 exports.rerun = {
-  setUp: function(done) {
-    // setup here if necessary
-    done();
-  },
-  default_options: function(test) {
-    test.expect(1);
+    setUp: function (done) {
+        // setup here if necessary
+        done();
+    },
+    taskManager: function (test) {
+        // test.expect(5);
+        var taskManager = require('../tasks/lib/taskmanager.js');
 
-    var actual = grunt.file.read('tmp/default_options');
-    var expected = grunt.file.read('test/expected/default_options');
-    test.equal(actual, expected, 'should describe what the default behavior is.');
+        test.ok(taskManager, 'taskmanager should not be undefined');
+        test.strictEqual(typeof taskManager, 'function', 'taskManager should be a function');
 
-    test.done();
-  },
-  custom_options: function(test) {
-    test.expect(1);
+        var options = {
+            tasks: ['clean', 'connect'],
+            port: 1247
+        };
 
-    var actual = grunt.file.read('tmp/custom_options');
-    var expected = grunt.file.read('test/expected/custom_options');
-    test.equal(actual, expected, 'should describe what the custom option(s) behavior is.');
+        var taskman = taskManager(options.tasks, grunt);
 
-    test.done();
-  },
+        test.ok(taskman, 'taskManager should create taskman');
+        test.strictEqual(typeof taskman, 'object', 'taskman should be an object');
+
+        test.ok(!taskman.startOne('dummy'), 'It should return false for unknown tasks');
+        test.ok(taskman.startOne('clean'), 'It should return true for known tasks');
+        test.ok(taskman.startOne('connect'), 'It should return true for known tasks');
+
+        test.strictEqual( typeof taskman.isRunning, 'function', 'it should expose the "isRunning" method');
+
+        test.ok( taskman.isRunning('connect'), 'A long running process should run for long');
+
+        test.ok( taskman.stopOne('connect'),'It should stop process');
+
+        test.ok( !taskman.isRunning('connect'), 'A stopped task should not be running');
+        test.done();
+    },
 };

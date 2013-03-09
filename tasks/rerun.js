@@ -8,11 +8,13 @@
 
 'use strict';
 
+var taskManager = require('./lib/taskmanager.js');
+
 module.exports = function (grunt) {
     //Module for output coloring
     var colors = require('colors');
 
-    grunt.registerMultiTask('rerun', 'Your task description goes here.', function () {
+    grunt.registerMultiTask('rerun', 'Rerun (kill and relaunch) a long living task', function () {
         // Merge task-specific and/or target-specific options with these defaults.
         var defaultsOptions = {
             tasks: [],
@@ -59,86 +61,6 @@ module.exports = function (grunt) {
     });
 
 
-    var taskManager = function taskManager(taskList) {
-        var tasks = Object.create(null);
-        taskList.forEach(function (elem) {
-            tasks[elem.toString()] = {
-                status: 'NOT RUNNING',
-                child: null
-            };
-        });
-
-        /**
-         * Start a registered task, given its name
-         * @param  {String} task The task to start
-         * @return {Boolean}
-         */
-
-        function startTask(task) {
-            var cmd;
-            if (!tasks[task]) {
-                grunt.log.error('Task ' + task + ' not defined.');
-                return false;
-            }
-            if (tasks[task].status !== 'NOT RUNNING') {
-                grunt.log.error('Task ' + task + ' already running.');
-                return false;
-
-            }
-            cmd = 'grunt ' + task;
-            grunt.log.writeln('Running task: ' + task.cyan);
-            tasks[task].status = 'RUNNING';
-            tasks[task].child = require('child_process').exec(cmd);
-
-            tasks[task].child.on('exit', function (code, signal) {
-                grunt.log.writeln('Task ' + task.cyan + ' completed');
-
-
-                tasks[task].status = 'NOT RUNNING';
-                delete tasks[task].child;
-            });
-            tasks[task].child.stdout.on('data', function (data) {
-                grunt.log.write(data);
-            });
-            return true;
-        }
-
-
-        /**
-         * Stop a running task
-         * @param  {string} task The task to stop
-         * @return {Boolean}
-         */
-
-        function stopTask(task) {
-            if (!tasks[task]) {
-                grunt.log.error('Task ' + task.cyan + ' not defined.');
-                return false;
-            }
-
-            var taskProcess = tasks[task];
-            if (taskProcess.status !== 'RUNNING' || !taskProcess.child) {
-                grunt.log.error('Task ' + task.cyan + ' is not running.');
-                return false;
-            }
-
-            taskProcess.status = 'NOT RUNNING';
-            taskProcess.child.removeAllListeners();
-            taskProcess.child.kill();
-            grunt.log.writeln('Task ' + task.cyan + ' killed.');
-            // taskProcess.child = null;
-            delete taskProcess.child;
-            return true;
-
-        }
-
-        return {
-            startOne: startTask,
-            stopOne: stopTask
-        };
-    };
-    
-
     var server = function server(taskManager, options) {
         var http = require('http');
         http.createServer(function (req, res) {
@@ -156,7 +78,7 @@ module.exports = function (grunt) {
                 res.end('Error\n');
             }
         }).listen(options.port, "127.0.0.1");
-        console.log('Server running at http://127.0.0.1:1337/');
+        console.log('Server running at http://127.0.0.1:' + options.port + '/');
     };
 
 };
