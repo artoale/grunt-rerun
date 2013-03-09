@@ -1,4 +1,4 @@
-# grunt-rerun
+# grunt-rerun [![Build Status](https://travis-ci.org/ArtoAle/grunt-rerun.png)](https://travis-ci.org/ArtoAle/grunt-rerun)
 
 > Launch, relaunch and stop grunt task.
 
