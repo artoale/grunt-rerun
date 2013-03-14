@@ -58,6 +58,12 @@ module.exports = function (grunt) {
           keepalive: false,
         },
       },
+      test: {
+        options: {
+          tasks: ['clean', 'connect'],
+          keepalive: false,
+        },
+      },
     },
 
     // Unit tests.

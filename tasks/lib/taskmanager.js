@@ -6,8 +6,11 @@
  * Licensed under the MIT license.
  */
 
-module.exports = function taskManager(taskList, grunt) {
-    var tasks = Object.create(null);
+
+
+module.exports = function taskManager(options, grunt) {
+    var tasks = Object.create(null),
+    taskList = options.tasks;
     taskList.forEach(function (elem) {
         tasks[elem.toString()] = {
             status: 'NOT RUNNING',
@@ -33,13 +36,13 @@ module.exports = function taskManager(taskList, grunt) {
 
         }
         cmd = 'grunt ' + task;
-        grunt.log.writeln('Running task: ' + task.cyan);
+        grunt.log.writeln('Task ' + task.cyan + ' running'.yellow);
         tasks[task].status = 'RUNNING';
 
         tasks[task].child = require('child_process').exec(cmd);
 
         tasks[task].child.on('exit', function (code, signal) {
-            grunt.log.writeln('Task ' + task.cyan + ' completed');
+            grunt.log.writeln('Task ' + task.cyan + ' completed'.green);
 
 
             tasks[task].status = 'NOT RUNNING';
@@ -66,20 +69,20 @@ module.exports = function taskManager(taskList, grunt) {
 
     function stopTask(task) {
         if (!tasks[task]) {
-            grunt.log.error('Task ' + task.cyan + ' not defined.');
+            grunt.log.error('Task ' + task.cyan + ' not defined');
             return false;
         }
 
         var taskProcess = tasks[task];
-        if (taskProcess.status !== 'RUNNING' || !taskProcess.child) {
-            grunt.log.error('Task ' + task.cyan + ' is not running.');
+        if (!isRunning(task)) {
+            grunt.log.error('Task ' + task.cyan + ' is not running');
             return false;
         }
 
         taskProcess.status = 'NOT RUNNING';
         taskProcess.child.removeAllListeners();
         taskProcess.child.kill();
-        grunt.log.writeln('Task ' + task.cyan + ' killed.');
+        grunt.log.writeln('Task ' + task.cyan + ' killed'.red);
         // taskProcess.child = null;
         delete taskProcess.child;
         return true;
@@ -88,7 +91,7 @@ module.exports = function taskManager(taskList, grunt) {
 
     function isRunning(task) {
         var taskProcess = tasks[task];
-        return taskProcess.status === 'RUNNING' && taskProcess.child; 
+        return taskProcess.status === 'RUNNING' && taskProcess.child;
     }
 
     return {

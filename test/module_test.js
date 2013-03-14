@@ -21,81 +21,70 @@ var grunt = require('grunt');
     test.doesNotThrow(block, [error], [message])
     test.ifError(value)
 */
-var taskManager;
+
+var Injector = require('di').Injector,
+    injector;
 exports.rerun = {
     setUp: function (done) {
         // setup here if necessary
-        taskManager = require('../tasks/lib/taskmanager.js');
+        var taskManager = require('../tasks/lib/taskmanager');
+        var options = {
+            tasks: ['clean', 'connect'],
+            port: 1247
+        };
+
+        var modules = {
+            'options': ['value', options],
+            'grunt': ['value', grunt],
+            'gruntTask': ['value', this],
+            'taskman': ['factory', taskManager],
+            'server': ['factory', require('../tasks/lib/server')],
+            'logger': ['value', grunt.log]
+        };
+
+        injector = new Injector([modules]);
         done();
     },
     taskManager: function (test) {
         // test.expect(5);
+        injector.invoke(function (taskman) {
 
+            test.ok(taskman, 'taskManager should create taskman');
+            test.strictEqual(typeof taskman, 'object', 'taskman should be an object');
 
-        test.ok(taskManager, 'taskmanager should not be undefined');
-        test.strictEqual(typeof taskManager, 'function', 'taskManager should be a function');
+            test.ok(!taskman.startOne('dummy'), 'It should return false for unknown tasks');
+            test.ok(taskman.startOne('clean'), 'It should return true for known tasks');
+            test.ok(taskman.startOne('connect'), 'It should return true for known tasks');
 
-        var options = {
-            tasks: ['clean', 'connect'],
-            port: 1247
-        };
+            test.strictEqual(typeof taskman.isRunning, 'function', 'it should expose the "isRunning" method');
 
-        var taskman = taskManager(options.tasks, grunt);
+            test.ok(taskman.isRunning('connect'), 'A long running process should run for long');
 
-        test.ok(taskman, 'taskManager should create taskman');
-        test.strictEqual(typeof taskman, 'object', 'taskman should be an object');
+            test.ok(taskman.stopOne('connect'), 'It should stop process');
 
-        test.ok(!taskman.startOne('dummy'), 'It should return false for unknown tasks');
-        test.ok(taskman.startOne('clean'), 'It should return true for known tasks');
-        test.ok(taskman.startOne('connect'), 'It should return true for known tasks');
-
-        test.strictEqual(typeof taskman.isRunning, 'function', 'it should expose the "isRunning" method');
-
-        test.ok(taskman.isRunning('connect'), 'A long running process should run for long');
-
-        test.ok(taskman.stopOne('connect'), 'It should stop process');
-
-        test.ok(!taskman.isRunning('connect'), 'A stopped task should not be running');
-        test.done();
-    },
-    server: function (test) {
-        test.expect(6);
-        var server = require('../tasks/lib/server.js');
-        test.ok(server, 'server should not be undefined');
-        test.strictEqual(typeof server, 'function', 'server should be a function');
-        var options = {
-            tasks: ['clean', 'connect'],
-            port: 1247
-        };
-
-        var taskman = taskManager(options.tasks, grunt);
-        server(taskman, options);
-        var opt = {
-
-            hostname: '127.0.0.1',
-            port: options.port,
-            path: '/connect',
-            method: 'POST'
-        };
-
-        taskman.startOne('connect');
-
-        var req = require('http').request(opt, function (res) {
-            var body = '';
-
-            res.on('data', function (chunk) {
-                body += chunk;
-                test.ok(chunk.length !== 0, 'It should recive non-empty responses');
-            });
-
-            res.on('end', function () {
-                test.strictEqual(body, 'Done', 'It should return done when a running task is stopped');
-                continueTests();
-            });
+            test.ok(!taskman.isRunning('connect'), 'A stopped task should not be running');
+            test.done();
         });
 
-        function continueTests() {        
-            opt.path = '/clean';
+    },
+    server: function (test) {
+        injector.invoke(function (taskman, server, options) {
+            test.expect(6);
+            test.ok(server, 'server should not be undefined');
+            test.strictEqual(typeof server, 'object', 'server should be an object');
+           
+
+            server.listen();
+            var opt = {
+
+                hostname: '127.0.0.1',
+                port: options.port,
+                path: '/connect:go',
+                method: 'POST'
+            };
+
+            taskman.startOne('connect');
+
             var req = require('http').request(opt, function (res) {
                 var body = '';
 
@@ -105,15 +94,33 @@ exports.rerun = {
                 });
 
                 res.on('end', function () {
-                    test.strictEqual(body, 'Error', 'It should return Error when the task is not running');
-                    test.done();
+                    var bodyO = JSON.parse(body);
+                    test.strictEqual(bodyO.msg, 'Done', 'It should return done when a running task is stopped');
+                    continueTests();
                 });
-
             });
-            req.end();
-        }
-        req.end();
 
+            function continueTests() {
+                opt.path = '/clean:go';
+                var req = require('http').request(opt, function (res) {
+                    var body = '';
+
+                    res.on('data', function (chunk) {
+                        body += chunk;
+                        test.ok(chunk.length !== 0, 'It should recive non-empty responses');
+                    });
+
+                    res.on('end', function () {
+                        var bodyO = JSON.parse(body);
+                        test.strictEqual(bodyO.msg, 'Error', 'It should return Error when the task is not running');
+                        test.done();
+                    });
+
+                });
+                req.end();
+            }
+            req.end();
+        });
     },
 
 };
